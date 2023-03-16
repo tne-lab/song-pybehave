@@ -71,7 +71,14 @@ class WhiskerLineSource(Source):
                                                                           component.id).encode('utf-8'))
             self.vals[component.id] = False
         else:
-            self.client.send('LineClaim {} -ResetOff\n'.format(component.address).encode('utf-8'))
+            if isinstance(self.components[component_id].address, list):
+                addresses = self.components[component_id].address
+            else:
+                addresses = [self.components[component_id].address]
+            command = ""
+            for address in addresses:
+                command += 'LineClaim {} -ResetOff\n'.format(address)
+            self.client.send(command.encode('utf-8'))
 
     def close_source(self):
         self.running.set()
@@ -80,10 +87,17 @@ class WhiskerLineSource(Source):
         return self.vals[component_id]
 
     def write_component(self, component_id, msg):
-        if msg:
-            self.client.send('LineSetState {} on\n'.format(self.components[component_id].address).encode('utf-8'))
+        if isinstance(self.components[component_id].address, list):
+            addresses = self.components[component_id].address
         else:
-            self.client.send('LineSetState {} off\n'.format(self.components[component_id].address).encode('utf-8'))
+            addresses = [self.components[component_id].address]
+        command = ""
+        for address in addresses:
+            if msg:
+                command += 'LineSetState {} on\n'.format(address)
+            else:
+                command += 'LineSetState {} off\n'.format(address)
+        self.client.send(command.encode('utf-8'))
 
     def is_available(self):
         return self.available
